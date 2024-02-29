@@ -1,6 +1,6 @@
 ---
 title: "Darwin Core Mapping"
-subtitle: "MICA - Muskrat occurrences collected in East Flanders, Belgium"
+subtitle: "KUL-Collections-bird-taxidermy-PAS "
 author: "Dimitri Brosens"
 date: "`r Sys.Date()`"
 output:
@@ -46,12 +46,12 @@ some columns renamed to DwC term
 File exported to csv
 
 ```{r}
-csv_files <- list.files(here::here("datasets", "mica-oostvlaanderen-occurrences", "data", "raw"), pattern = "*.txt$", full.names = TRUE)
+csv_files <- list.files(here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "raw"), pattern = "*.txt$", full.names = TRUE)
 
 ```
 
 ```{r}
-data <- lapply(csv_files, read_csv2) %>% bind_rows()
+data <- lapply(csv_files, read_delim) %>% bind_rows()
 ```
 
 ```{r}
