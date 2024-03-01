@@ -34,27 +34,20 @@ library(leaflet)        # coordinate transformation
 library(widgetframe)    # coordinate transformation
 library(sf)             # coordinate transformation
 library(lubridate)      # for the date
+library(tidygeocoder) 
 ```
 
 # Read source data
 
 Create a data frame `input_data` from the source data:
 
-The data was first processed in openrefine to enable georeferencing
-
+The data was first processed in openrefine to enable georeferencing, also valid eventDate was created in refine
+for script check: datasets/KUL-collections-taxidermi-birds-pas/src/dwc_mapping_grel.txt `github`
+Once geocoded, run script from line 120 (first load libraries)
 
 
 ```{r}
-csv_files <- list.files(here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim"), pattern = "*.txt$", full.names = TRUE)
-
-```
-
-```{r}
-data <- lapply(csv_files, read_delim) %>% bind_rows()
-```
-
-```{r}
-input_interim <- data
+input_interim <- read_csv(file = here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim", "KULeuven-ZoologyMuseum_refined.csv"))
 ```
 
 Preview data:
@@ -76,29 +69,56 @@ input_interim %<>% remove_empty("rows")
 ```{r}
 input_interim %>% head(n = 5)
 ```
-# Save to csv for Openrefine actions
-
-Save to CSV:
-
-```{r}
-write_csv(input_interim, here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim", "occurrence_interim.csv"), na = "")
-```
 
 
 
 # Georeference source data
 
-No georeferencing possible here
 
 
+## split column locality
 
-# split column locality
+not run, solution in openrefine
 
-```{r}
+
+```{r include=FALSE}
 
 input_interim %<>% separate(`dwc:locality`, sep = ',', remove = FALSE, into =  c('region','province','arrondissement','municipality'))
 
 ```
+
+
+## geocoding
+
+use osm geocoder service
+
+```{r eval=FALSE, include=FALSE}
+input_interim %<>% geocode(city = georeferenceBasis, country = `dwc:country`, method = 'osm', full_results = TRUE)
+
+```
+save geocoded file to save time while running script
+
+
+
+Save to CSV:
+
+```{r}
+write_csv(input_interim, here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim", "occurrence_geo.csv"), na = "")
+```
+
+read geocoded file to start with
+
+
+```{r}
+input_interim_geo <- read_csv(file = here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim", "occurrence_geo.csv"))
+```
+
+# View geocoded file & check
+
+```{r}
+input_interim_geo %>% head(n = 5)
+```
+
 
 
 # Occurrence core
@@ -108,7 +128,7 @@ input_interim %<>% separate(`dwc:locality`, sep = ',', remove = FALSE, into =  c
 Create a dataframe occurrence data only 
 
 ```{r}
-occurrence <- input_interim
+occurrence <- input_interim_geo
 ```
 
 
@@ -164,7 +184,7 @@ occurrence %<>% mutate(dwc_datasetID = "insert doi")
 ### institutionCode
 
 ```{r}
-occurrence %<>% mutate(institutionCode = "KU Leuven") # e.g. "INBO"
+occurrence %<>% mutate(dwc_institutionCode = "KU Leuven") # e.g. "INBO"
 ```
 ### collectionCode
 
@@ -185,7 +205,7 @@ The following terms contain information about the taxon:
 ### basisOfRecord
 
 ```{r}
-occurrence %<>% mutate(basisOfRecord = "preservedSpecimen")
+occurrence %<>% mutate(dwc_basisOfRecord = "preservedSpecimen")
 ```
 
 ### informationWithHeld
@@ -195,8 +215,8 @@ occurrence %<>% mutate(basisOfRecord = "preservedSpecimen")
 ### occurrenceID
 
 ```{r}
-occurrence %<>% rename(occurrenceID = `dwc:catalogNumber` ) %>%
-                mutate(occurrenceID = str_c("kul:col", occurrenceID))
+occurrence %<>% mutate(occurrenceID = `dwc:catalogNumber` ) %>%
+                mutate(occurrenceID = str_c("kul:col:", occurrenceID))
   
 ```
 
@@ -234,34 +254,24 @@ occurrence %<>%  rename(dwc_lifeStage = `dwc:lifeStage`)
 ### occurrenceRemarks
 
 ```{r}
-occurrence %<>% rename(occurrenceRemarks = 'action_en')
+#occurrence %<>% rename(dwc_occurrenceRemarks = 'action_en')
 ```
+
+## occurrenceStatus
+
+```{r}
+# to complete
+```
+
+## otherCatalogNumbers
+
+```{r}
+ occurrence %<>% mutate(dwc_otherCatalogNumbers = `dwc:otherCatalogNumbers`)
+```
+
 
 ## samplingProtocol
 
-```{r}
-occurrence %<>% mutate(samplingEffort = materials_en)
-```
-
-```{r}
-occurrence %<>% rename(samplingProtocol = 'materials_en') %>%
- 
-
-# extract follow ups to new column
-mutate(follow_up = str_extract(samplingProtocol, "Follow-up=[0-9]*")) %>%
-# remove follow ups from samplingProtocol
-mutate(samplingProtocol = str_remove(samplingProtocol, "Follow-up=[0-9]*")) %>%
-# remove leading ", " if present
-mutate(samplingProtocol = str_remove(samplingProtocol, "^,\\s")) %>%
-# remove trailing ", " if present
-mutate(samplingProtocol = str_remove(samplingProtocol, ",\\s$")) %>%
-# replace ", , " in ","
-mutate(samplingProtocol = str_replace(samplingProtocol,", , ", ", ")) %>%  
-# rename follow up
-rename(samplingEffort2 = "follow_up") %>% 
-# replace follow-up with times visited
-mutate(samplingProtocol = str_remove_all(samplingProtocol, "=[0-9]*"))
-```
 
 ### samplingEffort
 
@@ -322,13 +332,13 @@ occurrence %<>%
 ### continent
 
 ```{r}
-##occurrence %<>% mutate(continent = "Europe") # e.g. "Belgium = BE"
+occurrence %<>% mutate(dwc_continent = `dwc:continent` ) # e.g. "Belgium = BE"
 ```
 
 ### countryCode
 
 ```{r}
-#occurrence %<>% mutate(countryCode = "BE") # e.g. "Belgium = BE"
+occurrence %<>% mutate(dwc_countryCode = `dwc:countryCode`) # e.g. "Belgium = BE"
 ```
 
 ### municipality
@@ -337,7 +347,7 @@ municipality already in source file
 
 ```{r}
 occurrence %<>%
-  mutate(municipality = str_remove(municipality,"\\(BE\\)"))
+  mutate(dwc_municipality = municipality )
 ```
 
 ### verbatimcoordinates
@@ -348,15 +358,9 @@ occurrence %<>%
 
 ### verbatimcoordinatesystem
 
-```{r}
-#occurrence %<>% mutate(verbatimcoordinatesystem = "Lambert coordinates") # 
-```
 
 ### verbatimSRS
 
-```{r}
-#occurrence %<>% mutate(verbatimSRS = "Belgian Datum 1972")
-```
 
 ### decimalLatitude
 
@@ -367,6 +371,11 @@ occurrence %<>%
 ### coordinateUncertaintyInMeters
 
 ### georeferenceRemarks
+
+```{r}
+occurrence %<>% mutate(dwc_georeferenceRemarks = georeferenceRemarks)
+```
+
 
 ### identifiedBy
 
