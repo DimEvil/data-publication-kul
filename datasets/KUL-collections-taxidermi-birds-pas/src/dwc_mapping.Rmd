@@ -142,7 +142,8 @@ Map the data to [Darwin Core Occurrence](http://rs.gbif.org/core/dwc_occurrence_
 
 Start with record-level terms which contain metadata about the dataset (which is generally the same for all records).
 
-# Event
+
+# Record level
 
 
 ### type
@@ -212,6 +213,8 @@ occurrence %<>% mutate(dwc_basisOfRecord = "preservedSpecimen")
 
 ### dataGeneralizations
 
+# Occurrence
+
 ### occurrenceID
 
 ```{r}
@@ -251,11 +254,7 @@ occurrence %<>%  rename(dwc_lifeStage = `dwc:lifeStage`)
 
 ### behavior
 
-### occurrenceRemarks
 
-```{r}
-#occurrence %<>% rename(dwc_occurrenceRemarks = 'action_en')
-```
 
 ## occurrenceStatus
 
@@ -269,21 +268,26 @@ occurrence %<>%  rename(dwc_lifeStage = `dwc:lifeStage`)
  occurrence %<>% mutate(dwc_otherCatalogNumbers = `dwc:otherCatalogNumbers`)
 ```
 
-
-## samplingProtocol
-
-
-### samplingEffort
+### occurrenceRemarks
 
 ```{r}
-head(occurrence, n = 5)
-
-occurrence %<>%
-  # extract follow ups to new column
-  mutate(samplingEffort = str_replace(samplingEffort, "Follow-up=*", "Times-visited=")) %>%
-  mutate(samplingEffort = str_replace_all(samplingEffort, "=",":")) %>%
-  mutate(samplingEffort = str_replace_all(samplingEffort, ","," |"))
+occurrence %<>% rename(dwc_occurrenceRemarks = "Frans Pas Collection")
 ```
+
+# organism
+
+```{r}
+occurrence %<>% rename(dwc_previousIdentifications = `dwc:previousIdentifications`)
+
+```
+
+# organims remarks
+
+```{r}
+occurrence %<>% rename(dwc_organismRemarks = "pas collection stuffed birds")
+
+```
+
 
 ### eventDate
 
