@@ -39,14 +39,13 @@ library(lubridate)      # for the date
 # Read source data
 
 Create a data frame `input_data` from the source data:
-The source data was corrected in Excel
-Muskrat occurrences opened in openRefine
-Obsolete columns removed
-some columns renamed to DwC term
-File exported to csv
+
+The data was first processed in openrefine to enable georeferencing
+
+
 
 ```{r}
-csv_files <- list.files(here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "raw"), pattern = "*.txt$", full.names = TRUE)
+csv_files <- list.files(here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim"), pattern = "*.txt$", full.names = TRUE)
 
 ```
 
@@ -77,10 +76,30 @@ input_interim %<>% remove_empty("rows")
 ```{r}
 input_interim %>% head(n = 5)
 ```
+# Save to csv for Openrefine actions
+
+Save to CSV:
+
+```{r}
+write_csv(input_interim, here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "interim", "occurrence_interim.csv"), na = "")
+```
+
+
 
 # Georeference source data
 
 No georeferencing possible here
+
+
+
+# split column locality
+
+```{r}
+
+input_interim %<>% separate(`dwc:locality`, sep = ',', remove = FALSE, into =  c('region','province','arrondissement','municipality'))
+
+```
+
 
 # Occurrence core
 
@@ -91,6 +110,8 @@ Create a dataframe occurrence data only
 ```{r}
 occurrence <- input_interim
 ```
+
+
 
 
 
