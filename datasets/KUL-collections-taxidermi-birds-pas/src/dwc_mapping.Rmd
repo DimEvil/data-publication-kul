@@ -35,6 +35,7 @@ library(widgetframe)    # coordinate transformation
 library(sf)             # coordinate transformation
 library(lubridate)      # for the date
 library(tidygeocoder) 
+library(mapview)
 ```
 
 # Read source data
@@ -439,13 +440,13 @@ occurrence %<>% select(starts_with("dwc_"))
 Drop the `dwc_` prefix:
 
 ```{r}
-colnames(occurrence) <- str_remove(colnames(distribution), "dwc_")
+colnames(occurrence) <- str_remove(colnames(occurrence), "dwc_")
 ```
 
 Preview data:
 
 ```{r}
-distribution %>% head()
+occurrence %>% head()
 ```
 
 ```{r}
@@ -480,10 +481,21 @@ occurrenceMap$decimalLatitude <- as.numeric(occurrenceMap$decimalLatitude)
 occurrenceMap$decimalLongitude <- as.numeric(occurrenceMap$decimalLongitude)
 ```
 
+## Filter for not missing values
+
+```{r}
+occurrenceMap %<>%
+        filter(decimalLongitude > 0 ) 
+        
+#head (occurrence, n = 5 )
+
+```
+
+
+
 ```{r}
 head(occurrenceMap)
 ```
-
 
 
 ```{r}
@@ -492,3 +504,5 @@ head(occurrenceMap)
 head(occurrence)
 
 mapview(occurrenceMap, xcol = "decimalLongitude", ycol = "decimalLatitude", crs = 4269, grid = FALSE)
+
+```
