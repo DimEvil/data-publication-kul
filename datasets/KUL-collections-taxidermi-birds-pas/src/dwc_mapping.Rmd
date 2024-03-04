@@ -53,7 +53,7 @@ input_interim <- read_csv(file = here::here("datasets", "kul-collections-taxider
 
 Preview data:
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 input_interim %>% head(n = 5)
 ```
 
@@ -63,11 +63,11 @@ input_interim %>% head(n = 5)
 
 Clean data somewhat:
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 input_interim %<>% remove_empty("rows")
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 input_interim %>% head(n = 5)
 ```
 
@@ -82,7 +82,7 @@ input_interim %>% head(n = 5)
 not run, solution in openrefine
 
 
-```{r include=FALSE}
+```{r eval=FALSE, include=FALSE}
 
 input_interim %<>% separate(`dwc:locality`, sep = ',', remove = FALSE, into =  c('region','province','arrondissement','municipality'))
 
@@ -219,8 +219,8 @@ occurrence %<>% mutate(dwc_basisOfRecord = "preservedSpecimen")
 ### occurrenceID
 
 ```{r}
-occurrence %<>% mutate(occurrenceID = `dwc:catalogNumber` ) %>%
-                mutate(occurrenceID = str_c("kul:col:", occurrenceID))
+occurrence %<>% mutate(dwc_occurrenceID = `dwc:catalogNumber` ) %>%
+                mutate(dwc_occurrenceID = str_c("kul:col:", dwc_occurrenceID))
   
 ```
 
@@ -402,7 +402,7 @@ occurrence %<>% mutate(dwc_georeferenceRemarks = georeferenceRemarks)
 ### scientificName 
 
 ```{r}
-occurrence %<>% mutate(scientificName = `dwc:scientificName`)
+occurrence %<>% mutate(dwc_scientificName = `dwc:scientificName`)
 ```
 
 ### kingdom
@@ -415,21 +415,87 @@ occurrence %<>% mutate(dwc_kingdom = "Animalia")
 ### taxonRank
 
 ```{r}
-occurrence %<>% mutate(taxonRank = `dwc:taxonRank`)
+occurrence %<>% mutate(dwc_taxonRank = `dwc:taxonRank`)
 ```
 
 
 ### occurrenceStatus
 
 ```{r}
-occurrence %<>% mutate(occurrenceStatus = "present")
+occurrence %<>% mutate(dwc_occurrenceStatus = "present")
 
+```
+
+# Multimedia Extension
+
+## Pre-processing
+
+Create a dataframe multimedia data only 
+
+```{r}
+multimedia <- input_interim_geo
+```
+
+### occurrenceID
+
+```{r}
+multimedia %<>% mutate(dwc_occurrenceID = `dwc:catalogNumber` ) %>%
+                mutate(dwc_occurrenceID = str_c("kul:col:", dwc_occurrenceID))
+  
+```
+
+Separate rows identifier
+
+```{r}
+multimedia %<>% separate_rows(`dwc_ExtensionSimpleMultimedia:identifier`, sep = ";", convert =  FALSE )
+```
+
+
+
+## type
+
+```{r}
+multimedia %<>% mutate(dwc_type = "StillImage")
+
+```
+## identifier
+
+
+```{r}
+multimedia %<>% mutate(dwc_identifier = `dwc_ExtensionSimpleMultimedia:identifier`)
+
+```
+
+## rightsholder
+
+```{r}
+multimedia %<>% mutate(dwc_rightsHolder = "KU Leuven. Imaging Lab") # e.g. "INBO"
+```
+
+## publisher
+
+```{r}
+multimedia %<>% mutate(dwc_publisher = "KU Leuven. Imaging Lab") # e.g. "INBO"
+```
+
+
+## license
+
+```{r}
+multimedia %<>% mutate(dwc_license = "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en") # e.g. "INBO"
+```
+
+## datasetID
+
+```{r}
+multimedia %<>% mutate(dwc_datasetID = "doi dataset") # e.g. "INBO"
 ```
 
 
 
 ## Post-processing
 
+### occurrence
 
 Only keep the Darwin Core columns:
 
@@ -443,15 +509,43 @@ Drop the `dwc_` prefix:
 colnames(occurrence) <- str_remove(colnames(occurrence), "dwc_")
 ```
 
+
+
+```{r}
+occurrence <- mutate_all(occurrence, as.character())
+```
+
+### multimedia
+
+Only keep the Darwin Core columns:
+
+```{r}
+multimedia %<>% select(starts_with("dwc_"))
+```
+
+Drop the `dwc_` prefix:
+
+```{r}
+colnames(multimedia) <- str_remove(colnames(multimedia), "dwc_")
+```
+
+
+
+```{r}
+multimedia <- mutate_all(multimedia, as.character())
+```
+
 Preview data:
 
 ```{r}
 occurrence %>% head()
 ```
-
 ```{r}
-occurrence <- mutate_all(occurrence, as.character())
+multimedia %>% head()
 ```
+
+
+
 
 
 Preview data:
@@ -463,8 +557,13 @@ occurrence %>% head()
 Save to CSV:
 
 ```{r}
-write_csv(occurrence, here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "processed", "occurrence_geo.csv"), na = "")
+write_csv(occurrence, here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "processed", "occurrence.csv"), na = "")
 ```
+
+```{r}
+write_csv(multimedia, here::here("datasets", "kul-collections-taxidermi-birds-pas", "data", "processed", "multimedia.csv"), na = "")
+```
+
 
 
 Visualize data on a map
